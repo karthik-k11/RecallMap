@@ -1,3 +1,4 @@
+
 import json
 
 import pytest
@@ -77,8 +78,12 @@ def test_delete_entry(db_path):
 
 
 def test_search_and_category_filter(db_path):
-    knowledge.create_entry("Python functions", "Reusable code", "Python", db_path=db_path)
-    knowledge.create_entry("SQL joins", "Combine database tables", "SQL", db_path=db_path)
+    knowledge.create_entry(
+        "Python functions", "Reusable code", "Python", db_path=db_path
+    )
+    knowledge.create_entry(
+        "SQL joins", "Combine database tables", "SQL", db_path=db_path
+    )
 
     results = knowledge.list_entries(search="Python", db_path=db_path)
     assert len(results) == 1
@@ -138,3 +143,74 @@ def test_delete_route(client, db_path):
 
     assert response.status_code == 200
     assert knowledge.get_entry(entry_id, db_path) is None
+
+
+# Knowledge Connections tests
+
+def test_create_knowledge_connection(db_path):
+    first_id = knowledge.create_entry("Python Lists", db_path=db_path)
+    second_id = knowledge.create_entry("List Comprehension", db_path=db_path)
+
+    knowledge.create_knowledge_connection(first_id, second_id, db_path)
+
+    first_connections = knowledge.list_connections(first_id, db_path)
+    second_connections = knowledge.list_connections(second_id, db_path)
+
+    assert len(first_connections) == 1
+    assert first_connections[0]["id"] == second_id
+
+    assert len(second_connections) == 1
+    assert second_connections[0]["id"] == first_id
+
+
+def test_duplicate_connection_is_prevented(db_path):
+    first_id = knowledge.create_entry("Entry A", db_path=db_path)
+    second_id = knowledge.create_entry("Entry B", db_path=db_path)
+
+    knowledge.create_knowledge_connection(first_id, second_id, db_path)
+    knowledge.create_knowledge_connection(second_id, first_id, db_path)
+
+    assert len(knowledge.list_connections(first_id, db_path)) == 1
+    assert len(knowledge.list_connections(second_id, db_path)) == 1
+
+
+def test_self_connection_is_rejected(db_path):
+    entry_id = knowledge.create_entry("Standalone entry", db_path=db_path)
+
+    with pytest.raises(ValueError):
+        knowledge.create_knowledge_connection(entry_id, entry_id, db_path)
+
+
+def test_connection_to_missing_entry_is_rejected(db_path):
+    entry_id = knowledge.create_entry("Existing entry", db_path=db_path)
+
+    with pytest.raises(ValueError):
+        knowledge.create_knowledge_connection(entry_id, 99999, db_path)
+
+
+def test_delete_connection_preserves_entries(db_path):
+    first_id = knowledge.create_entry("Entry A", db_path=db_path)
+    second_id = knowledge.create_entry("Entry B", db_path=db_path)
+
+    connection_id = knowledge.create_knowledge_connection(
+        first_id, second_id, db_path
+    )
+
+    assert connection_id is not None
+    assert knowledge.delete_knowledge_connection(connection_id, db_path) is True
+
+    assert knowledge.list_connections(first_id, db_path) == []
+    assert knowledge.list_connections(second_id, db_path) == []
+    assert knowledge.get_entry(first_id, db_path) is not None
+    assert knowledge.get_entry(second_id, db_path) is not None
+
+
+def test_deleting_entry_removes_its_connections(db_path):
+    first_id = knowledge.create_entry("Entry A", db_path=db_path)
+    second_id = knowledge.create_entry("Entry B", db_path=db_path)
+
+    knowledge.create_knowledge_connection(first_id, second_id, db_path)
+
+    assert knowledge.delete_entry(first_id, db_path) is True
+    assert knowledge.get_entry(second_id, db_path) is not None
+    assert knowledge.list_connections(second_id, db_path) == []

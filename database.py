@@ -1,26 +1,23 @@
-
 import sqlite3
 from pathlib import Path
-
 
 BASE_DIR = Path(__file__).resolve().parent
 DATABASE_PATH = BASE_DIR / "instance" / "recallmap.db"
 
 
 def get_connection(db_path=None):
-    """Create and return a connection to the SQLite database."""
+    """Return a configured SQLite connection."""
     path = Path(db_path) if db_path else DATABASE_PATH
     path.parent.mkdir(parents=True, exist_ok=True)
 
     connection = sqlite3.connect(path, timeout=10)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
-
     return connection
 
 
 def init_db(db_path=None):
-    """Initialize the database and create the initial schema."""
+    """Create the database schema if it does not exist."""
     connection = get_connection(db_path)
 
     try:
@@ -39,12 +36,9 @@ def init_db(db_path=None):
                 )
             )
         """)
-
         connection.commit()
-
     except sqlite3.Error:
         connection.rollback()
         raise
-
     finally:
         connection.close()

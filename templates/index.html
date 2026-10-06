@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Knowledge Library · RecallMap{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">YOUR KNOWLEDGE BASE</p>
+        <h1>Knowledge library</h1>
+        <p class="muted">Capture what you learn. Build a library worth revisiting.</p>
+    </div>
+    <a class="button primary" href="{{ url_for('new_entry') }}">+ New entry</a>
+</div>
+
+<div class="metric-strip">
+    <div class="metric">
+        <span class="metric-label">TOTAL ENTRIES</span>
+        <strong>{{ entries|length }}</strong>
+        <span class="metric-caption">Matching current filters</span>
+    </div>
+    <div class="metric">
+        <span class="metric-label">CATEGORIES</span>
+        <strong>{{ categories|length }}</strong>
+        <span class="metric-caption">Across your library</span>
+    </div>
+</div>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div>
+            <h2>All knowledge</h2>
+            <p class="muted">Search and filter your saved entries.</p>
+        </div>
+        <span class="count-badge">{{ entries|length }} shown</span>
+    </div>
+
+    <form class="filters" method="GET" action="{{ url_for('index') }}">
+        <input
+            type="search"
+            name="q"
+            value="{{ search }}"
+            placeholder="Search titles, explanations, or tags..."
+            aria-label="Search knowledge entries"
+        >
+        <select name="category" aria-label="Filter by category">
+            <option value="">All categories</option>
+            {% for category in categories %}
+                <option value="{{ category }}"
+                    {% if selected_category == category %}selected{% endif %}>
+                    {{ category }}
+                </option>
+            {% endfor %}
+        </select>
+        <button class="button secondary" type="submit">Apply filters</button>
+        {% if search or selected_category %}
+            <a class="clear-link" href="{{ url_for('index') }}">Clear</a>
+        {% endif %}
+    </form>
+
+    {% if entries %}
+        <div class="entry-list">
+            {% for entry in entries %}
+                <article class="entry-row">
+                    <div class="entry-icon">K</div>
+                    <div class="entry-main">
+                        <a class="entry-title" href="{{ url_for('view_entry', entry_id=entry.id) }}">
+                            {{ entry.title }}
+                        </a>
+                        <p class="entry-excerpt">
+                            {{ entry.explanation[:180] if entry.explanation else 'No explanation added yet.' }}
+                            {% if entry.explanation|length > 180 %}…{% endif %}
+                        </p>
+                        <div class="entry-meta">
+                            <span class="category-tag">{{ entry.category }}</span>
+                            {% for tag in entry.tags_list %}
+                                <span class="tag">{{ tag }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <a class="text-action" href="{{ url_for('edit_entry', entry_id=entry.id) }}">Edit</a>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <div class="empty-symbol">＋</div>
+            <h3>{% if search or selected_category %}No matching entries{% else %}Start your knowledge library{% endif %}</h3>
+            <p>
+                {% if search or selected_category %}
+                    Try changing your search or category filter.
+                {% else %}
+                    Save a concept, an explanation, or something useful you learned today.
+                {% endif %}
+            </p>
+            {% if not search and not selected_category %}
+                <a class="button primary" href="{{ url_for('new_entry') }}">Create your first entry</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

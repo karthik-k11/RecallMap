@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}{{ 'Edit entry' if entry else 'New entry' }} · RecallMap{% endblock %}
+{% block breadcrumb %}{{ 'Edit entry' if entry else 'New entry' }}{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">KNOWLEDGE LIBRARY</p>
+        <h1>{{ 'Edit entry' if entry else 'Create an entry' }}</h1>
+        <p class="muted">Record the concept clearly so you can recall it later.</p>
+    </div>
+</div>
+
+<section class="panel form-panel">
+    <form method="POST">
+        <div class="form-group">
+            <label for="title">Title <span class="required">*</span></label>
+            <input
+                id="title"
+                name="title"
+                maxlength="200"
+                required
+                autofocus
+                value="{{ entry.title if entry else request.form.get('title', '') }}"
+                placeholder="e.g. How Python decorators work"
+            >
+            <small>A clear, searchable name for this concept.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="explanation">Explanation</label>
+            <textarea
+                id="explanation"
+                name="explanation"
+                maxlength="20000"
+                rows="9"
+                placeholder="Write what you learned in your own words..."
+            >{{ entry.explanation if entry else request.form.get('explanation', '') }}</textarea>
+        </div>
+
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="category">Category</label>
+                <input
+                    id="category"
+                    name="category"
+                    maxlength="100"
+                    value="{{ entry.category if entry else request.form.get('category', 'General') }}"
+                    placeholder="e.g. Python"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="tags">Tags</label>
+                <input
+                    id="tags"
+                    name="tags"
+                    value="{{ ', '.join(entry.tags_list) if entry else request.form.get('tags', '') }}"
+                    placeholder="decorators, functions, syntax"
+                >
+                <small>Separate tags with commas. Duplicate tags are removed.</small>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a class="button secondary" href="{{ url_for('view_entry', entry_id=entry.id) if entry else url_for('index') }}">Cancel</a>
+            <button class="button primary" type="submit">
+                {{ 'Save changes' if entry else 'Create entry' }}
+            </button>
+        </div>
+    </form>
+</section>
+{% endblock %}

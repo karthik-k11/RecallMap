@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}RecallMap{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <a class="brand" href="{{ url_for('index') }}">
+                <span class="brand-mark">R</span>
+                <span>RecallMap<small>PERSONAL KNOWLEDGE</small></span>
+            </a>
+
+            <p class="nav-label">WORKSPACE</p>
+            <a class="nav-link active" href="{{ url_for('index') }}">Knowledge library</a>
+            <div class="sidebar-note">
+                <span class="status-dot"></span>
+                <span>Stored locally on this device</span>
+            </div>
+        </aside>
+
+        <main class="main-area">
+            <header class="topbar">
+                <span class="breadcrumb">Workspace / <strong>{% block breadcrumb %}Library{% endblock %}</strong></span>
+                <span class="local-label">LOCAL WORKSPACE</span>
+            </header>
+
+            <section class="page-content">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-list">
+                            {% for category, message in messages %}
+                                <div class="flash {{ category }}">{{ message }}</div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </section>
+
+            <footer class="footer">RecallMap <span>·</span> Your knowledge, connected.</footer>
+        </main>
+    </div>
+</body>
+</html>

@@ -1,3 +1,4 @@
+
 import sqlite3
 from pathlib import Path
 
@@ -36,9 +37,41 @@ def init_db(db_path=None):
                 )
             )
         """)
+
+        connection.execute("""
+            CREATE TABLE IF NOT EXISTS knowledge_connections (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                entry_id INTEGER NOT NULL,
+                related_entry_id INTEGER NOT NULL,
+                created_at TEXT NOT NULL DEFAULT (
+                    strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
+                ),
+                CHECK (entry_id < related_entry_id),
+                UNIQUE (entry_id, related_entry_id),
+                FOREIGN KEY (entry_id)
+                    REFERENCES knowledge_entries(id) ON DELETE CASCADE,
+                FOREIGN KEY (related_entry_id)
+                    REFERENCES knowledge_entries(id) ON DELETE CASCADE
+            )
+        """)
+
+        connection.execute("""
+            CREATE INDEX IF NOT EXISTS
+            idx_knowledge_connections_entry
+            ON knowledge_connections(entry_id, related_entry_id)
+        """)
+
+        connection.execute("""
+            CREATE INDEX IF NOT EXISTS
+            idx_knowledge_connections_related
+            ON knowledge_connections(related_entry_id, entry_id)
+        """)
+
         connection.commit()
+
     except sqlite3.Error:
         connection.rollback()
         raise
+
     finally:
         connection.close()

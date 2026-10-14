@@ -229,6 +229,18 @@ def create_app(test_config=None):
                 "graph.html",
                 graph=graph,
             )
+        @app.route("/insights")
+        def knowledge_insights():
+            try:
+                insights = knowledge.get_knowledge_insights(db_path)
+            except sqlite3.Error:
+                app.logger.exception("Could not load knowledge insights")
+                abort(500)
+
+            return render_template(
+                "insights.html",
+                insights=insights,
+            )
 
     @app.errorhandler(404)
     def not_found(_error):

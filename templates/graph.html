@@ -1,0 +1,485 @@
+{% extends "base.html" %}
+
+{% block title %}Knowledge Graph · RecallMap{% endblock %}
+{% block breadcrumb %}Knowledge graph{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Knowledge map</p>
+        <h1>Knowledge Graph</h1>
+        <p class="muted">
+            Explore how your knowledge entries are connected.
+        </p>
+    </div>
+
+    <a class="button" href="{{ url_for('index') }}">Back to library</a>
+</div>
+
+<section class="panel graph-panel">
+
+    <div class="graph-toolbar">
+        <div class="graph-stats">
+            <div>
+                <strong>{{ graph.nodes|length }}</strong>
+                <span class="muted">entries</span>
+            </div>
+
+            <div>
+                <strong>{{ graph.edges|length }}</strong>
+                <span class="muted">connections</span>
+            </div>
+        </div>
+
+        <div class="graph-controls">
+            <button class="button" type="button" id="zoom-out">
+                −
+            </button>
+
+            <span id="zoom-level">100%</span>
+
+            <button class="button" type="button" id="zoom-in">
+                +
+            </button>
+
+            <button class="button" type="button" id="reset-layout">
+                Reset layout
+            </button>
+
+            <button class="button" type="button" id="fit-graph">
+                Fit graph
+            </button>
+        </div>
+    </div>
+
+    <div class="graph-legend">
+        <span class="legend-node"></span>
+        <span>Knowledge entry</span>
+
+        <span class="legend-line"></span>
+        <span>Knowledge connection</span>
+    </div>
+
+    <div id="knowledge-graph"
+         class="knowledge-graph"
+         data-graph='{{ graph|tojson }}'>
+        <canvas id="graph-canvas"></canvas>
+    </div>
+
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const graphContainer = document.getElementById("knowledge-graph");
+const canvas = document.getElementById("graph-canvas");
+const ctx = canvas.getContext("2d");
+
+const graphData = JSON.parse(
+    graphContainer.dataset.graph
+);
+
+const nodes = graphData.nodes.map(node => ({
+    ...node,
+    x: 0,
+    y: 0,
+    radius: 30,
+    dragging: false
+}));
+
+const nodeMap = new Map(
+    nodes.map(node => [node.id, node])
+);
+
+const edges = graphData.edges
+    .map(edge => ({
+        source: nodeMap.get(edge.entry_id),
+        target: nodeMap.get(edge.related_entry_id)
+    }))
+    .filter(edge => edge.source && edge.target);
+
+let zoom = 1;
+
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 2;
+const ZOOM_STEP = 0.1;
+
+function resizeCanvas() {
+    const width = Math.max(
+        graphContainer.clientWidth,
+        700
+    );
+
+    canvas.width = width;
+    canvas.height = 560;
+
+    resetLayout();
+}
+
+function resetLayout() {
+    if (!nodes.length) {
+        draw();
+        return;
+    }
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    const radius = Math.min(
+        canvas.width,
+        canvas.height
+    ) * 0.32;
+
+    nodes.forEach((node, index) => {
+        const angle =
+            (Math.PI * 2 * index) / nodes.length;
+
+        node.x =
+            centerX +
+            Math.cos(angle) * radius;
+
+        node.y =
+            centerY +
+            Math.sin(angle) * radius;
+    });
+
+    zoom = 1;
+    updateZoomLabel();
+    draw();
+}
+
+function fitGraph() {
+    if (!nodes.length) {
+        return;
+    }
+
+    const padding = 70;
+
+    const minX = Math.min(
+        ...nodes.map(node => node.x)
+    );
+
+    const maxX = Math.max(
+        ...nodes.map(node => node.x)
+    );
+
+    const minY = Math.min(
+        ...nodes.map(node => node.y)
+    );
+
+    const maxY = Math.max(
+        ...nodes.map(node => node.y)
+    );
+
+    const graphWidth =
+        Math.max(maxX - minX, 1);
+
+    const graphHeight =
+        Math.max(maxY - minY, 1);
+
+    const availableWidth =
+        canvas.width - padding * 2;
+
+    const availableHeight =
+        canvas.height - padding * 2;
+
+    zoom = Math.min(
+        availableWidth / graphWidth,
+        availableHeight / graphHeight,
+        MAX_ZOOM
+    );
+
+    zoom = Math.max(
+        zoom,
+        MIN_ZOOM
+    );
+
+    updateZoomLabel();
+    draw();
+}
+
+function setZoom(value) {
+    zoom = Math.min(
+        MAX_ZOOM,
+        Math.max(MIN_ZOOM, value)
+    );
+
+    updateZoomLabel();
+    draw();
+}
+
+function updateZoomLabel() {
+    document.getElementById("zoom-level").textContent =
+        Math.round(zoom * 100) + "%";
+}
+
+function draw() {
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    ctx.save();
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    ctx.translate(centerX, centerY);
+    ctx.scale(zoom, zoom);
+    ctx.translate(-centerX, -centerY);
+
+    drawEdges();
+    drawNodes();
+
+    ctx.restore();
+}
+
+function drawEdges() {
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#8b8f87";
+
+    edges.forEach(edge => {
+        ctx.beginPath();
+
+        ctx.moveTo(
+            edge.source.x,
+            edge.source.y
+        );
+
+        ctx.lineTo(
+            edge.target.x,
+            edge.target.y
+        );
+
+        ctx.stroke();
+    });
+}
+
+function drawNodes() {
+    nodes.forEach(node => {
+        ctx.beginPath();
+
+        ctx.arc(
+            node.x,
+            node.y,
+            node.radius,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle = node.dragging
+            ? "#353a33"
+            : "#20231f";
+
+        ctx.fill();
+
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#d7d9d2";
+        ctx.stroke();
+
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "12px sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        const label =
+            node.title.length > 18
+                ? node.title.substring(0, 18) + "..."
+                : node.title;
+
+        ctx.fillText(
+            label,
+            node.x,
+            node.y
+        );
+    });
+}
+
+function getMousePosition(event) {
+    const rect = canvas.getBoundingClientRect();
+
+    const rawX =
+        event.clientX - rect.left;
+
+    const rawY =
+        event.clientY - rect.top;
+
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+
+    return {
+        x:
+            (rawX - centerX) / zoom +
+            centerX,
+
+        y:
+            (rawY - centerY) / zoom +
+            centerY
+    };
+}
+
+function findNode(x, y) {
+    return nodes.find(node => {
+        const distance = Math.sqrt(
+            Math.pow(x - node.x, 2) +
+            Math.pow(y - node.y, 2)
+        );
+
+        return distance <= node.radius;
+    });
+}
+
+canvas.addEventListener(
+    "mousedown",
+    event => {
+        const position =
+            getMousePosition(event);
+
+        const node = findNode(
+            position.x,
+            position.y
+        );
+
+        if (!node) {
+            return;
+        }
+
+        node.dragging = true;
+
+        node.dragOffsetX =
+            position.x - node.x;
+
+        node.dragOffsetY =
+            position.y - node.y;
+
+        canvas.style.cursor =
+            "grabbing";
+
+        draw();
+    }
+);
+
+canvas.addEventListener(
+    "mousemove",
+    event => {
+        const node = nodes.find(
+            item => item.dragging
+        );
+
+        if (!node) {
+            return;
+        }
+
+        const position =
+            getMousePosition(event);
+
+        node.x =
+            position.x -
+            node.dragOffsetX;
+
+        node.y =
+            position.y -
+            node.dragOffsetY;
+
+        draw();
+    }
+);
+
+canvas.addEventListener(
+    "mouseup",
+    () => {
+        const node = nodes.find(
+            item => item.dragging
+        );
+
+        if (node) {
+            node.dragging = false;
+        }
+
+        canvas.style.cursor = "grab";
+
+        draw();
+    }
+);
+
+canvas.addEventListener(
+    "mouseleave",
+    () => {
+        const node = nodes.find(
+            item => item.dragging
+        );
+
+        if (node) {
+            node.dragging = false;
+        }
+
+        canvas.style.cursor = "grab";
+
+        draw();
+    }
+);
+
+canvas.addEventListener(
+    "click",
+    event => {
+        const position =
+            getMousePosition(event);
+
+        const node = findNode(
+            position.x,
+            position.y
+        );
+
+        if (!node) {
+            return;
+        }
+
+        window.location.href =
+            "{{ url_for('view_entry', entry_id=0) }}"
+                .replace(
+                    "/0",
+                    "/" + node.id
+                );
+    }
+);
+
+document.getElementById(
+    "zoom-in"
+).addEventListener(
+    "click",
+    () => setZoom(zoom + ZOOM_STEP)
+);
+
+document.getElementById(
+    "zoom-out"
+).addEventListener(
+    "click",
+    () => setZoom(zoom - ZOOM_STEP)
+);
+
+document.getElementById(
+    "reset-layout"
+).addEventListener(
+    "click",
+    resetLayout
+);
+
+document.getElementById(
+    "fit-graph"
+).addEventListener(
+    "click",
+    fitGraph
+);
+
+canvas.style.cursor = "grab";
+
+window.addEventListener(
+    "resize",
+    resizeCanvas
+);
+
+resizeCanvas();
+</script>
+{% endblock %}

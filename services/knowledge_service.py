@@ -312,3 +312,69 @@ def get_knowledge_graph(db_path=None):
         }
     finally:
         connection.close()
+
+def get_knowledge_insights(db_path=None):
+    """Return summary statistics and relationship insights."""
+    connection = get_connection(db_path)
+
+    try:
+        total_entries = connection.execute(
+            "SELECT COUNT(*) FROM knowledge_entries"
+        ).fetchone()[0]
+
+        total_connections = connection.execute(
+            "SELECT COUNT(*) FROM knowledge_connections"
+        ).fetchone()[0]
+
+        category_rows = connection.execute(
+            """
+            SELECT category, COUNT(*) AS entry_count
+            FROM knowledge_entries
+            GROUP BY category
+            ORDER BY entry_count DESC, category COLLATE NOCASE
+            """
+        ).fetchall()
+
+        connected_rows = connection.execute(
+            """
+            SELECT
+                e.id,
+                e.title,
+                COUNT(c.id) AS connection_count
+            FROM knowledge_entries e
+            LEFT JOIN knowledge_connections c
+                ON e.id = c.entry_id
+                OR e.id = c.related_entry_id
+            GROUP BY e.id
+            ORDER BY connection_count DESC, e.title COLLATE NOCASE
+            """
+        ).fetchall()
+
+        most_connected = [
+            dict(row)
+            for row in connected_rows
+            if row["connection_count"] > 0
+        ]
+
+        isolated_entries = [
+            dict(row)
+            for row in connected_rows
+            if row["connection_count"] == 0
+        ]
+
+        average_connections = (
+            (total_connections * 2) / total_entries
+            if total_entries
+            else 0
+        )
+
+        return {
+            "total_entries": total_entries,
+            "total_connections": total_connections,
+            "average_connections": round(average_connections, 2),
+            "categories": [dict(row) for row in category_rows],
+            "most_connected": most_connected,
+            "isolated_entries": isolated_entries,
+        }
+    finally:
+        connection.close()

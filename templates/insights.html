@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Knowledge Insights · RecallMap{% endblock %}
+{% block breadcrumb %}Knowledge insights{% endblock %}
+
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow">Knowledge analytics</p>
+        <h1>Knowledge Insights</h1>
+        <p class="muted">
+            Understand the structure and relationships in your knowledge library.
+        </p>
+    </div>
+
+    <a class="button" href="{{ url_for('index') }}">Back to library</a>
+</div>
+
+<div class="insight-grid">
+    <section class="panel insight-card">
+        <span class="metric-label">TOTAL ENTRIES</span>
+        <strong>{{ insights.total_entries }}</strong>
+        <p class="muted">Knowledge items in your library.</p>
+    </section>
+
+    <section class="panel insight-card">
+        <span class="metric-label">TOTAL CONNECTIONS</span>
+        <strong>{{ insights.total_connections }}</strong>
+        <p class="muted">Relationships between entries.</p>
+    </section>
+
+    <section class="panel insight-card">
+        <span class="metric-label">AVERAGE CONNECTIONS</span>
+        <strong>{{ insights.average_connections }}</strong>
+        <p class="muted">Connections per knowledge entry.</p>
+    </section>
+</div>
+
+<div class="insight-columns">
+
+    <section class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Categories</p>
+                <h2>Knowledge distribution</h2>
+            </div>
+        </div>
+
+        <div class="insight-list">
+            {% for category in insights.categories %}
+                <div class="insight-row">
+                    <span>{{ category.category }}</span>
+                    <strong>{{ category.entry_count }}</strong>
+                </div>
+            {% else %}
+                <p class="muted">No categories available yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Connections</p>
+                <h2>Most connected</h2>
+            </div>
+        </div>
+
+        <div class="insight-list">
+            {% for entry in insights.most_connected[:10] %}
+                <a
+                    class="insight-row insight-link"
+                    href="{{ url_for('view_entry', entry_id=entry.id) }}"
+                >
+                    <span>{{ entry.title }}</span>
+                    <strong>{{ entry.connection_count }}</strong>
+                </a>
+            {% else %}
+                <p class="muted">No connected entries yet.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+</div>
+
+<section class="panel isolated-panel">
+    <div class="section-heading">
+        <div>
+            <p class="eyebrow">Discovery</p>
+            <h2>Isolated knowledge</h2>
+            <p class="muted">
+                Entries that currently have no connections to other knowledge.
+            </p>
+        </div>
+
+        <strong class="isolated-count">
+            {{ insights.isolated_entries|length }}
+        </strong>
+    </div>
+
+    <div class="isolated-list">
+        {% for entry in insights.isolated_entries %}
+            <a
+                class="isolated-item"
+                href="{{ url_for('view_entry', entry_id=entry.id) }}"
+            >
+                <span>{{ entry.title }}</span>
+                <span class="muted">{{ entry.category }}</span>
+            </a>
+        {% else %}
+            <p class="muted">
+                Great — every knowledge entry is connected.
+            </p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

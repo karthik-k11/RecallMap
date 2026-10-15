@@ -367,3 +367,261 @@ input:focus, textarea:focus, select:focus {
     .danger-zone { align-items: flex-start; flex-direction: column; }
     .footer { padding: 0 15px 20px; }
 }
+
+
+.connection-list {
+    display: grid;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.connection-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px;
+    border: 1px solid var(--border-color, #deded6);
+    border-radius: 10px;
+}
+
+.connection-item p {
+    margin: 5px 0 0;
+}
+
+.connection-item a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.connection-item a:hover {
+    text-decoration: underline;
+}
+
+.connection-search {
+    display: flex;
+    gap: 10px;
+    margin: 8px 0 18px;
+}
+
+.connection-search input {
+    flex: 1;
+    min-width: 0;
+}
+
+.detail-section select,
+.detail-section input {
+    max-width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color, #deded6);
+    border-radius: 8px;
+    font: inherit;
+}
+
+.detail-section select {
+    display: block;
+    width: 100%;
+    margin: 8px 0 12px;
+}
+
+@media (max-width: 600px) {
+    .connection-item {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .connection-search {
+        flex-direction: column;
+    }
+}
+
+.graph-panel {
+    overflow: hidden;
+}
+
+.graph-toolbar {
+    display: flex;
+    gap: 32px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border-color, #deded6);
+}
+
+.graph-toolbar strong {
+    font-size: 20px;
+    margin-right: 5px;
+}
+
+.knowledge-graph {
+    width: 100%;
+    min-height: 560px;
+    overflow-x: auto;
+    cursor: pointer;
+}
+
+.knowledge-graph canvas {
+    display: block;
+    max-width: 100%;
+}
+
+.graph-stats {
+    display: flex;
+    gap: 28px;
+}
+
+.graph-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.graph-controls .button {
+    min-width: 42px;
+}
+
+#zoom-level {
+    min-width: 52px;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.graph-legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 16px 0;
+    font-size: 13px;
+}
+
+.legend-node {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #20231f;
+    display: inline-block;
+}
+
+.legend-line {
+    width: 28px;
+    height: 2px;
+    background: #8b8f87;
+    display: inline-block;
+    margin-left: 12px;
+}
+
+@media (max-width: 700px) {
+    .graph-toolbar {
+        flex-direction: column;
+    }
+
+    .graph-controls {
+        margin-left: 0;
+        flex-wrap: wrap;
+    }
+
+    .graph-legend {
+        flex-wrap: wrap;
+    }
+}
+
+.insight-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.insight-card {
+    min-height: 150px;
+}
+
+.insight-card strong {
+    display: block;
+    margin: 10px 0 4px;
+    font-size: 34px;
+    line-height: 1;
+}
+
+.insight-card p {
+    margin: 0;
+}
+
+.insight-columns {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.section-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 18px;
+}
+
+.section-heading h2 {
+    margin: 4px 0;
+}
+
+.insight-list {
+    display: grid;
+    gap: 8px;
+}
+
+.insight-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-color, #deded6);
+    border-radius: 8px;
+}
+
+.insight-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+.insight-link:hover {
+    text-decoration: underline;
+}
+
+.isolated-panel {
+    margin-bottom: 16px;
+}
+
+.isolated-count {
+    font-size: 28px;
+}
+
+.isolated-list {
+    display: grid;
+    gap: 8px;
+}
+
+.isolated-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 13px 14px;
+    border: 1px solid var(--border-color, #deded6);
+    border-radius: 8px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.isolated-item:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 800px) {
+    .insight-grid,
+    .insight-columns {
+        grid-template-columns: 1fr;
+    }
+}

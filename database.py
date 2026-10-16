@@ -2,6 +2,7 @@
 import sqlite3
 from pathlib import Path
 
+
 BASE_DIR = Path(__file__).resolve().parent
 DATABASE_PATH = BASE_DIR / "instance" / "recallmap.db"
 
@@ -14,18 +15,20 @@ def get_connection(db_path=None):
     connection = sqlite3.connect(path, timeout=10)
     connection.row_factory = sqlite3.Row
     connection.execute("PRAGMA foreign_keys = ON")
+
     return connection
 
 
 def init_db(db_path=None):
-    """Create the database schema if it does not exist."""
+    """Create the RecallMap database schema if it does not exist."""
     connection = get_connection(db_path)
 
     try:
         connection.execute("""
             CREATE TABLE IF NOT EXISTS knowledge_entries (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                title TEXT NOT NULL CHECK (length(trim(title)) > 0),
+                title TEXT NOT NULL
+                    CHECK (length(trim(title)) > 0),
                 explanation TEXT NOT NULL DEFAULT '',
                 category TEXT NOT NULL DEFAULT 'General',
                 tags TEXT NOT NULL DEFAULT '[]',
@@ -41,30 +44,38 @@ def init_db(db_path=None):
         connection.execute("""
             CREATE TABLE IF NOT EXISTS knowledge_connections (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+
                 entry_id INTEGER NOT NULL,
                 related_entry_id INTEGER NOT NULL,
+
                 created_at TEXT NOT NULL DEFAULT (
                     strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
                 ),
+
                 CHECK (entry_id < related_entry_id),
+
                 UNIQUE (entry_id, related_entry_id),
+
                 FOREIGN KEY (entry_id)
-                    REFERENCES knowledge_entries(id) ON DELETE CASCADE,
+                    REFERENCES knowledge_entries(id)
+                    ON DELETE CASCADE,
+
                 FOREIGN KEY (related_entry_id)
-                    REFERENCES knowledge_entries(id) ON DELETE CASCADE
+                    REFERENCES knowledge_entries(id)
+                    ON DELETE CASCADE
             )
         """)
 
         connection.execute("""
             CREATE INDEX IF NOT EXISTS
-            idx_knowledge_connections_entry
-            ON knowledge_connections(entry_id, related_entry_id)
+            idx_knowledge_connections_entry_id
+            ON knowledge_connections(entry_id)
         """)
 
         connection.execute("""
             CREATE INDEX IF NOT EXISTS
-            idx_knowledge_connections_related
-            ON knowledge_connections(related_entry_id, entry_id)
+            idx_knowledge_connections_related_entry_id
+            ON knowledge_connections(related_entry_id)
         """)
 
         connection.commit()

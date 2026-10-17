@@ -1,151 +1,196 @@
-
 {% extends "base.html" %}
 
 {% block title %}{{ entry.title }} · RecallMap{% endblock %}
 {% block breadcrumb %}Entry details{% endblock %}
 
 {% block content %}
-<div class="detail-back">
-    <a class="clear-link" href="{{ url_for('index') }}">← Back to library</a>
-</div>
-
-<div class="page-heading detail-heading">
-    <div>
-        <p class="eyebrow">{{ entry.category }}</p>
-        <h1>{{ entry.title }}</h1>
-        <p class="muted">
-            Created {{ entry.created_at|replace('T', ' ')|replace('Z', ' UTC') }}
-        </p>
-    </div>
-    <a class="button primary" href="{{ url_for('edit_entry', entry_id=entry.id) }}">
-        Edit entry
-    </a>
-</div>
-
-<section class="panel detail-panel">
-    <div class="detail-section">
-        <h2>Explanation</h2>
-        <div class="prose">{{ entry.explanation or 'No explanation has been added yet.' }}</div>
+<div class="entry-detail-page">
+    <div class="detail-back">
+        <a class="clear-link" href="{{ url_for('index') }}">← Back to library</a>
     </div>
 
-    <div class="detail-section">
-        <h2>Tags</h2>
-        <div class="entry-meta">
-            {% for tag in entry.tags_list %}
-                <span class="tag">{{ tag }}</span>
-            {% else %}
-                <span class="muted">No tags added</span>
-            {% endfor %}
+    <header class="page-heading detail-heading">
+        <div class="detail-title-block">
+            <div class="detail-kicker">
+                <span class="detail-entry-number">ENTRY {{ "%04d"|format(entry.id) }}</span>
+                <span class="detail-kicker-divider">/</span>
+                <span class="eyebrow">{{ entry.category }}</span>
+            </div>
+            <h1>{{ entry.title }}<span class="heading-period">.</span></h1>
+            <p class="muted">
+                Added {{ entry.created_at|replace('T', ' ')|replace('Z', ' UTC') }}
+            </p>
         </div>
-    </div>
+        <a class="button primary" href="{{ url_for('edit_entry', entry_id=entry.id) }}">Edit entry ↗</a>
+    </header>
 
-    <div class="detail-section">
-        <h2>Knowledge connections</h2>
-        <p class="muted">
-            Link this entry to related concepts. Connections work in both directions.
-        </p>
-
-        {% if connections %}
-            <div class="connection-list">
-                {% for related in connections %}
-                    <div class="connection-item">
-                        <div>
-                            <a href="{{ url_for('view_entry', entry_id=related.id) }}">
-                                <strong>{{ related.title }}</strong>
-                            </a>
-                            <p class="muted">{{ related.category }}</p>
-                        </div>
-
-                        <form
-                            method="POST"
-                            action="{{ url_for(
-                                'remove_connection',
-                                entry_id=entry.id,
-                                connection_id=related.connection_id
-                            ) }}"
-                            onsubmit="return confirm('Remove this connection? The entries will not be deleted.');"
-                        >
-                            <button class="button danger" type="submit">
-                                Remove link
-                            </button>
-                        </form>
+    <div class="detail-layout">
+        <main class="panel detail-panel">
+            <section class="detail-section detail-explanation">
+                <div class="detail-section-heading">
+                    <span class="section-number">01</span>
+                    <h2>Explanation</h2>
+                </div>
+                {% if entry.explanation %}
+                    <div class="prose">{{ entry.explanation }}</div>
+                {% else %}
+                    <div class="detail-no-content">
+                        <p>No explanation has been added yet.</p>
+                        <a href="{{ url_for('edit_entry', entry_id=entry.id) }}">Add an explanation →</a>
                     </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <p class="muted">No connections yet. Link a related entry below.</p>
-        {% endif %}
-    </div>
+                {% endif %}
+            </section>
 
-    <div class="detail-section">
-        <h2>Connect another entry</h2>
-
-        <form method="GET" action="{{ url_for('view_entry', entry_id=entry.id) }}">
-            <label for="connection_q">Find an entry</label>
-            <div class="connection-search">
-                <input
-                    id="connection_q"
-                    name="connection_q"
-                    type="search"
-                    value="{{ connection_search }}"
-                    placeholder="Search titles, explanations, or tags"
-                >
-                <button class="button" type="submit">Search</button>
-            </div>
-        </form>
-
-        {% if connection_candidates %}
-            <form
-                method="POST"
-                action="{{ url_for('add_connection', entry_id=entry.id) }}"
-            >
-                <label for="related_entry_id">Choose a knowledge entry</label>
-                <select id="related_entry_id" name="related_entry_id" required>
-                    <option value="">Select an entry</option>
-                    {% for candidate in connection_candidates %}
-                        <option value="{{ candidate.id }}">
-                            {{ candidate.title }} — {{ candidate.category }}
-                        </option>
+            <section class="detail-section">
+                <div class="detail-section-heading">
+                    <span class="section-number">02</span>
+                    <h2>Tags and classification</h2>
+                </div>
+                <div class="entry-meta detail-tags">
+                    {% for tag in entry.tags_list %}
+                        <span class="tag">{{ tag }}</span>
+                    {% else %}
+                        <span class="muted">No tags added yet.</span>
                     {% endfor %}
-                </select>
-                <button class="button primary" type="submit">
-                    Create connection
-                </button>
-            </form>
-        {% else %}
-            <p class="muted">
-                No matching entries available. Create another knowledge entry
-                first, or try a different search.
-            </p>
-        {% endif %}
-    </div>
+                </div>
+            </section>
 
-    <div class="detail-section timestamps">
-        <div>
-            <span class="metric-label">CREATED</span>
-            <p>{{ entry.created_at }}</p>
-        </div>
-        <div>
-            <span class="metric-label">LAST UPDATED</span>
-            <p>{{ entry.updated_at }}</p>
-        </div>
-    </div>
+            <section class="detail-section detail-connections">
+                <div class="detail-section-heading">
+                    <span class="section-number">03</span>
+                    <div>
+                        <h2>Related knowledge</h2>
+                        <p class="muted">Ideas become more useful when you connect them.</p>
+                    </div>
+                    <span class="count-badge">{{ connections|length }}</span>
+                </div>
 
-    <div class="danger-zone">
-        <div>
-            <strong>Delete this entry</strong>
-            <p class="muted">
-                This permanently removes the entry from your local database.
-                Its connections will also be removed.
-            </p>
-        </div>
-        <form
-            method="POST"
-            action="{{ url_for('remove_entry', entry_id=entry.id) }}"
-            onsubmit="return confirm('Permanently delete this knowledge entry?');"
-        >
-            <button class="button danger" type="submit">Delete entry</button>
-        </form>
+                {% if connections %}
+                    <div class="connection-list">
+                        {% for related in connections %}
+                            <article class="connection-item">
+                                <span class="connection-index">{{ "%02d"|format(loop.index) }}</span>
+                                <div class="connection-item-main">
+                                    <a class="connection-title" href="{{ url_for('view_entry', entry_id=related.id) }}">
+                                        {{ related.title }} <span aria-hidden="true">↗</span>
+                                    </a>
+                                    <p class="muted">{{ related.category }}</p>
+                                </div>
+                                <form
+                                    method="POST"
+                                    action="{{ url_for('remove_connection', entry_id=entry.id, connection_id=related.connection_id) }}"
+                                    onsubmit="return confirm('Remove this connection? The entries will not be deleted.');"
+                                >
+                                    <button class="text-action connection-remove" type="submit">Remove</button>
+                                </form>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="connection-empty">
+                        <p>No connections yet.</p>
+                        <span class="muted">Link a related concept to start building your knowledge map.</span>
+                    </div>
+                {% endif %}
+            </section>
+
+            <section class="detail-section detail-add-connection">
+                <div class="detail-section-heading">
+                    <span class="section-number">04</span>
+                    <div>
+                        <h2>Connect an entry</h2>
+                        <p class="muted">Connections are shared in both directions.</p>
+                    </div>
+                </div>
+
+                <form class="detail-connection-search" method="GET" action="{{ url_for('view_entry', entry_id=entry.id) }}">
+                    <label for="connection_q">Find a concept</label>
+                    <div class="connection-search">
+                        <input
+                            id="connection_q"
+                            name="connection_q"
+                            type="search"
+                            value="{{ connection_search }}"
+                            placeholder="Search titles, explanations, or tags"
+                        >
+                        <button class="button secondary" type="submit">Search</button>
+                    </div>
+                </form>
+
+                {% if connection_candidates %}
+                    <form class="connect-entry-form" method="POST" action="{{ url_for('add_connection', entry_id=entry.id) }}">
+                        <label for="related_entry_id">Available entries</label>
+                        <div class="connect-entry-controls">
+                            <select id="related_entry_id" name="related_entry_id" required>
+                                <option value="">Choose an entry to connect</option>
+                                {% for candidate in connection_candidates %}
+                                    <option value="{{ candidate.id }}">
+                                        {{ candidate.title }} — {{ candidate.category }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <button class="button primary" type="submit">Create connection</button>
+                        </div>
+                    </form>
+                {% else %}
+                    <p class="muted detail-candidate-empty">
+                        No matching entries available. Try another search or create another entry first.
+                    </p>
+                {% endif %}
+            </section>
+
+            <section class="detail-timestamps">
+                <div>
+                    <span class="metric-label">CREATED</span>
+                    <p>{{ entry.created_at }}</p>
+                </div>
+                <div>
+                    <span class="metric-label">LAST UPDATED</span>
+                    <p>{{ entry.updated_at }}</p>
+                </div>
+            </section>
+        </main>
+
+        <aside class="detail-aside">
+            <section class="detail-aside-block">
+                <p class="eyebrow">ENTRY RECORD</p>
+                <div class="detail-record-row">
+                    <span>Reference</span>
+                    <strong>#{{ "%04d"|format(entry.id) }}</strong>
+                </div>
+                <div class="detail-record-row">
+                    <span>Category</span>
+                    <strong>{{ entry.category }}</strong>
+                </div>
+                <div class="detail-record-row">
+                    <span>Connections</span>
+                    <strong>{{ connections|length }}</strong>
+                </div>
+                <div class="detail-record-row">
+                    <span>Tags</span>
+                    <strong>{{ entry.tags_list|length }}</strong>
+                </div>
+            </section>
+
+            <section class="detail-aside-block detail-aside-note">
+                <p class="eyebrow">KEEP IN MIND</p>
+                <p>Good notes are easy to find, clear to understand, and connected to other useful ideas.</p>
+                <a href="{{ url_for('knowledge_graph') }}">Explore the knowledge graph →</a>
+            </section>
+
+            <section class="detail-delete-block">
+                <p class="eyebrow">DANGER ZONE</p>
+                <h3>Remove this entry</h3>
+                <p class="muted">Permanently delete this record and its connections. This cannot be undone.</p>
+                <form
+                    method="POST"
+                    action="{{ url_for('remove_entry', entry_id=entry.id) }}"
+                    onsubmit="return confirm('Permanently delete this knowledge entry?');"
+                >
+                    <button class="button danger detail-delete-button" type="submit">Delete entry</button>
+                </form>
+            </section>
+        </aside>
     </div>
-</section>
+</div>
 {% endblock %}

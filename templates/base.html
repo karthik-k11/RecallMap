@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -15,7 +16,29 @@
             </a>
 
             <p class="nav-label">WORKSPACE</p>
-            <a class="nav-link active" href="{{ url_for('index') }}">Knowledge library</a>
+
+            <a class="nav-link" href="{{ url_for('index') }}">
+                Knowledge library
+            </a>
+
+            <a class="nav-link" href="{{ url_for('knowledge_graph') }}">
+                Knowledge graph
+            </a>
+
+            <a class="nav-link" href="{{ url_for('knowledge_insights') }}">
+                Knowledge insights
+            </a>
+
+            <p class="nav-label">BACKUP & RESTORE</p>
+
+            <a class="nav-link" href="{{ url_for('export_knowledge') }}">
+                Export JSON
+            </a>
+
+            <a class="nav-link" href="{{ url_for('import_knowledge') }}">
+                Import JSON
+            </a>
+
             <div class="sidebar-note">
                 <span class="status-dot"></span>
                 <span>Stored locally on this device</span>
@@ -24,7 +47,11 @@
 
         <main class="main-area">
             <header class="topbar">
-                <span class="breadcrumb">Workspace / <strong>{% block breadcrumb %}Library{% endblock %}</strong></span>
+                <span class="breadcrumb">
+                    Workspace /
+                    <strong>{% block breadcrumb %}Library{% endblock %}</strong>
+                </span>
+
                 <span class="local-label">LOCAL WORKSPACE</span>
             </header>
 
@@ -33,7 +60,9 @@
                     {% if messages %}
                         <div class="flash-list">
                             {% for category, message in messages %}
-                                <div class="flash {{ category }}">{{ message }}</div>
+                                <div class="flash {{ category }}">
+                                    {{ message }}
+                                </div>
                             {% endfor %}
                         </div>
                     {% endif %}
@@ -42,8 +71,12 @@
                 {% block content %}{% endblock %}
             </section>
 
-            <footer class="footer">RecallMap <span>·</span> Your knowledge, connected.</footer>
+            <footer class="footer">
+                RecallMap <span>·</span> Your knowledge, connected.
+            </footer>
         </main>
     </div>
+
+    {% block scripts %}{% endblock %}
 </body>
 </html>

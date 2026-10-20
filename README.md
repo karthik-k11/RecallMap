@@ -17,6 +17,22 @@ Instead of scattering notes across multiple files, RecallMap keeps your knowledg
 - **Local SQLite Storage** — Keep your knowledge stored locally on your device.
 - **Input Validation** — Validate entry data and handle application errors.
 
+## Workflow Architecture
+
+RecallMap follows a simple workflow in which users create, search, connect, and retrieve knowledge stored in a local database. The application also supports insights generation and JSON backup and restoration.
+
+![RecallMap Workflow Architecture](screenshots/workflow-architecture.png)
+
+### Workflow Overview
+
+1. **User Interaction:** Users create or search for knowledge through the interface.
+2. **Application Processing:** Requests are validated and processed according to the requested operation.
+3. **Data Storage:** Knowledge entries and their relationships are stored in the local database.
+4. **Knowledge Retrieval:** Search, graph, and insights operations retrieve relevant information.
+5. **Backup and Restore:** Users can export their knowledge as JSON or import a supported backup.
+
+This workflow keeps knowledge management, relationship exploration, and data backup within a single local application.
+
 ## Screenshots
 
 ### 1. Knowledge Library

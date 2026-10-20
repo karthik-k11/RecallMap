@@ -2,7 +2,16 @@
 import json
 import sqlite3
 
-from flask import Flask, abort, flash, redirect, render_template, request, url_for
+from flask import (
+    Flask,
+    Response,
+    abort,
+    flash,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 
 from config import Config
 from database import init_db
@@ -25,16 +34,18 @@ def create_app(test_config=None):
         raise
 
     def parse_entry(row):
-        """Convert stored tag JSON into a list for templates."""
+        """Convert a database row into a template-friendly dictionary."""
         if row is None:
             return None
 
-        try:
-            row["tags_list"] = json.loads(row["tags"])
-        except (TypeError, json.JSONDecodeError):
-            row["tags_list"] = []
+        entry = dict(row)
 
-        return row
+        try:
+            entry["tags_list"] = json.loads(entry["tags"])
+        except (TypeError, json.JSONDecodeError):
+            entry["tags_list"] = []
+
+        return entry
 
     @app.route("/")
     def index():
@@ -140,13 +151,33 @@ def create_app(test_config=None):
 
         return render_template("entry_form.html", entry=entry)
 
-    @app.route("/entries/<int:entry_id>/connections", methods=["POST"])
-    def add_connection(entry_id):
-        if not knowledge.get_entry(entry_id, db_path):
+    @app.route("/entries/<int:entry_id>/delete", methods=["POST"])
+    def remove_entry(entry_id):
+        try:
+            deleted = knowledge.delete_entry(entry_id, db_path)
+        except sqlite3.Error:
+            app.logger.exception("Could not delete knowledge entry")
+            flash("The entry could not be deleted. Please try again.", "error")
+            return redirect(url_for("index"))
+
+        if not deleted:
             abort(404)
 
+        flash("Knowledge entry deleted.", "success")
+        return redirect(url_for("index"))
+
+    # Knowledge Connections
+
+    @app.route("/entries/<int:entry_id>/connections", methods=["POST"])
+    def add_connection(entry_id):
         try:
-            related_entry_id = int(request.form.get("related_entry_id", ""))
+            if knowledge.get_entry(entry_id, db_path) is None:
+                abort(404)
+
+            related_entry_id = int(
+                request.form.get("related_entry_id", "")
+            )
+
             connection_id = knowledge.create_knowledge_connection(
                 entry_id,
                 related_entry_id,
@@ -159,8 +190,10 @@ def create_app(test_config=None):
                 flash("Knowledge connection created.", "success")
 
         except (ValueError, TypeError) as error:
-            message = str(error) or "Select a valid entry to connect."
-            flash(message, "error")
+            flash(
+                str(error) or "Select a valid entry to connect.",
+                "error",
+            )
         except sqlite3.Error:
             app.logger.exception("Could not create knowledge connection")
             flash("The connection could not be created. Please try again.", "error")
@@ -173,8 +206,7 @@ def create_app(test_config=None):
     )
     def remove_connection(entry_id, connection_id):
         try:
-            entry = knowledge.get_entry(entry_id, db_path)
-            if entry is None:
+            if knowledge.get_entry(entry_id, db_path) is None:
                 abort(404)
 
             connections = knowledge.list_connections(entry_id, db_path)
@@ -202,45 +234,92 @@ def create_app(test_config=None):
 
         return redirect(url_for("view_entry", entry_id=entry_id))
 
-    @app.route("/entries/<int:entry_id>/delete", methods=["POST"])
-    def remove_entry(entry_id):
+    # Knowledge Graph
+
+    @app.route("/graph")
+    def knowledge_graph():
         try:
-            deleted = knowledge.delete_entry(entry_id, db_path)
+            graph = knowledge.get_knowledge_graph(db_path)
         except sqlite3.Error:
-            app.logger.exception("Could not delete knowledge entry")
-            flash("The entry could not be deleted. Please try again.", "error")
-            return redirect(url_for("index"))
+            app.logger.exception("Could not load knowledge graph")
+            abort(500)
 
-        if not deleted:
-            abort(404)
+        return render_template("graph.html", graph=graph)
 
-        flash("Knowledge entry deleted.", "success")
-        return redirect(url_for("index"))
+    # Knowledge Insights
 
-        @app.route("/graph")
-        def knowledge_graph():
-            try:
-                graph = knowledge.get_knowledge_graph(db_path)
-            except sqlite3.Error:
-                app.logger.exception("Could not load knowledge graph")
-                abort(500)
+    @app.route("/insights")
+    def knowledge_insights():
+        try:
+            insights = knowledge.get_knowledge_insights(db_path)
+        except sqlite3.Error:
+            app.logger.exception("Could not load knowledge insights")
+            abort(500)
 
-            return render_template(
-                "graph.html",
-                graph=graph,
+        return render_template("insights.html", insights=insights)
+
+    # JSON Export
+
+    @app.route("/export")
+    def export_knowledge():
+        try:
+            data = knowledge.export_knowledge_data(db_path)
+            export_json = json.dumps(
+                data,
+                indent=2,
+                ensure_ascii=False,
             )
-        @app.route("/insights")
-        def knowledge_insights():
-            try:
-                insights = knowledge.get_knowledge_insights(db_path)
-            except sqlite3.Error:
-                app.logger.exception("Could not load knowledge insights")
-                abort(500)
+        except (sqlite3.Error, ValueError, TypeError):
+            app.logger.exception("Could not export knowledge data")
+            abort(500)
 
-            return render_template(
-                "insights.html",
-                insights=insights,
-            )
+        return Response(
+            export_json,
+            mimetype="application/json",
+            headers={
+                "Content-Disposition": (
+                    'attachment; filename="recallmap-backup.json"'
+                )
+            },
+        )
+
+    # JSON Import
+
+    @app.route("/import", methods=["GET", "POST"])
+    def import_knowledge():
+        if request.method == "POST":
+            uploaded_file = request.files.get("backup_file")
+
+            if uploaded_file is None or not uploaded_file.filename:
+                flash("Please select a JSON backup file.", "error")
+                return redirect(url_for("import_knowledge"))
+
+            try:
+                data = json.loads(
+                    uploaded_file.get().decode("utf-8")
+                )
+
+                result = knowledge.import_knowledge_data(
+                    data,
+                    db_path,
+                )
+
+                flash(
+                    f"Imported {result['entries_imported']} entries "
+                    f"and {result['connections_imported']} connections.",
+                    "success",
+                )
+                return redirect(url_for("index"))
+
+            except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as error:
+                flash(f"Import failed: {error}", "error")
+            except (sqlite3.Error, TypeError, KeyError):
+                app.logger.exception("Could not import knowledge data")
+                flash("The backup could not be imported.", "error")
+
+        return render_template("import.html")
+
+    # Error Handlers
 
     @app.errorhandler(404)
     def not_found(_error):
